@@ -1,9 +1,11 @@
-window.addEventListener("load", function() {
+const { get } = _;
+
+window.addEventListener('load', function () {
   // At first, let's check if we have permission for notification
   // If not, let's ask for i
   console.log('load', window.Notification, Notification.permission);
-  if (window.Notification && Notification.permission !== "granted") {
-    Notification.requestPermission().then(function(status) {
+  if (window.Notification && Notification.permission !== 'granted') {
+    Notification.requestPermission().then(function (status) {
       if (Notification.permission !== status) {
         Notification.permission = status;
       }
@@ -11,30 +13,60 @@ window.addEventListener("load", function() {
   }
 });
 
+let user;
+
+gameEvent = ({ event = 'heartbeat', data }) => {
+  return JSON.stringify({
+    id: user,
+    event,
+    ...data
+  });
+};
+
 (() => {
-  console.log("init");
+  console.log('init');
 
   // websocket config
-  const clickGangSocket = new WebSocket("wss://echo.websocket.org");
+  const connection = new WebSocket('wss://echo.websocket.org');
 
-  clickGangSocket.onmessage = msg => {
-    console.log(JSON.parse(msg.data).message);
-    const notif = new Notification(JSON.parse(msg.data).message, {
-      body: "QUICK! CLICK!"
-    });
-    console.log(msg, msg.data, notif);
+  connection.onopen = msg => {
+    // send connect event
+    // recieve user id
+    connection.send(JSON.stringify({
+      event: 'connect',
+      data: {
+        id: 123
+      }
+    }));
   };
 
-  // game actions
+  connection.onmessage = msg => {
+    const event = JSON.parse(msg.data);
+    switch (event.event) {
+      case 'connect':
+        user = get(event, 'data.id');
+        break;
+      case 'notify':
+        new Notification(get(event, 'data.title'), {
+          body: get(event, 'data.message')
+        });
+        break;
+      default:
+        console.log(event);
+        break;
+    }
+  };
+
 
   // game button
-  document.getElementById("cg-action").addEventListener("click", () => {
-    console.log("clicked");
-    console.log(Notification.permission);
-    clickGangSocket.send(
-      JSON.stringify({
-        message: "click action",
-        id: 123
+  document.getElementById('cg-action').addEventListener('click', () => {
+    console.log('clicked');
+    connection.send(
+      gameEvent({
+        event: 'click',
+        data: {
+          some: 'data'
+        }
       })
     );
   });
