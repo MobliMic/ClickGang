@@ -16,18 +16,31 @@ window.addEventListener('load', function () {
 let user;
 
 gameEvent = ({ event = 'heartbeat', data }) => {
-  return JSON.stringify({
+  const payload = {
     id: user,
     event,
-    ...data
-  });
+    data
+  };
+
+  console.groupCollapsed(`Send: ${ event }`);
+  console.log(payload);
+  console.groupEnd();
+
+  return JSON.stringify(payload);
 };
 
 (() => {
-  console.log('init');
+  const cgButton = document.getElementById('cg-action');
 
   // websocket config
   const connection = new WebSocket('wss://echo.websocket.org');
+
+  // inform server of disconnect when user closes window
+  window.addEventListener('beforeunload', () => {
+    if (user) {
+      connection.send(gameEvent({ event: 'disconnect' }));
+    }
+  });
 
   connection.onopen = msg => {
     // send connect event
@@ -42,6 +55,13 @@ gameEvent = ({ event = 'heartbeat', data }) => {
 
   connection.onmessage = msg => {
     const event = JSON.parse(msg.data);
+
+    // debugging
+    console.groupCollapsed(`Recieved: ${ event.event }`);
+    console.log('response', msg);
+    console.log('payload', event);
+    console.groupEnd();
+
     switch (event.event) {
       case 'connect':
         user = get(event, 'data.id');
@@ -51,19 +71,21 @@ gameEvent = ({ event = 'heartbeat', data }) => {
           body: get(event, 'data.message')
         });
         break;
+      case 'turn':
+        cgButton.classList.add('active');
+        break;
       default:
         console.log(event);
         break;
     }
   };
 
-
   // game button
-  document.getElementById('cg-action').addEventListener('click', () => {
+  cgButton.addEventListener('click', () => {
     console.log('clicked');
     connection.send(
       gameEvent({
-        event: 'click',
+        event: 'turn',
         data: {
           some: 'data'
         }
