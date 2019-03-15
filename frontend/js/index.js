@@ -5,9 +5,9 @@ let user;
 gameEvent = ({ event = 'heartbeat', data }) => {
   const payload = {
     event,
+    timestamp: new Date().getTime(),
     data: {
       ...data,
-      timestamp: new Date().getTime(),
       id: user
     }
   };
