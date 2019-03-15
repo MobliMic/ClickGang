@@ -5,10 +5,10 @@ let user;
 gameEvent = ({ event = 'heartbeat', data }) => {
   const payload = {
     event,
-    timestamp: new Date().getTime(),
+    timestamp: new Date().toISOString(),
+    id: user,
     data: {
       ...data,
-      id: user
     }
   };
 
@@ -31,7 +31,7 @@ initClickGang = () => {
   const cgButton = document.getElementById('cg-action');
 
   // websocket config
-  const connection = new WebSocket('wss://echo.websocket.org');
+  const connection = new WebSocket('ws://localhost:3117/game');
 
   // inform server of disconnect when user closes window
   window.addEventListener('beforeunload', () => {
@@ -45,9 +45,6 @@ initClickGang = () => {
     // recieve user id
     connection.send(JSON.stringify({
       event: 'connect',
-      data: {
-        id: 123
-      }
     }));
   };
 
@@ -70,7 +67,7 @@ initClickGang = () => {
 
     switch (event.event) {
       case 'connected':
-        // {"event": "connected", "data": {"id": "xxxx-xxxxxxxx-xxx–xxxxxx" }}
+        // {"event": "connected", "data": { "id": "xxxx-xxxxxxxx-xxx–xxxxxx" }}
         user = get(event, 'data.id');
         break;
       case 'disconnected':
@@ -112,9 +109,6 @@ initClickGang = () => {
     connection.send(
       gameEvent({
         event: 'click_response',
-        data: {
-          some: 'data'
-        }
       })
     );
   });
